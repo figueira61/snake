@@ -1,0 +1,924 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Snake Neon Mobile</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Orbitron:wght@500;700;900&display=swap" rel="stylesheet">
+    
+    <style>
+        * {
+            user-select: none;
+            -webkit-user-select: none;
+            -webkit-touch-callout: none;
+            -webkit-tap-highlight-color: transparent;
+            box-sizing: border-box;
+        }
+
+        /* Dynamic Viewport & Safe Area Handling */
+        html, body {
+            height: 100dvh;
+            max-height: 100dvh;
+            width: 100vw;
+            overflow: hidden;
+            background-color: #05070e;
+            font-family: 'Inter', sans-serif;
+            color: #ffffff;
+            touch-action: none;
+        }
+
+        .font-orbitron {
+            font-family: 'Orbitron', monospace;
+        }
+
+        /* Safe Area Padding for Android Gesture / Button Bars & iOS Indicator */
+        .safe-bottom-padding {
+            padding-bottom: max(12px, env(safe-area-inset-bottom));
+        }
+
+        /* Neon Glows */
+        .neon-text-green {
+            text-shadow: 0 0 10px rgba(0, 255, 170, 0.6), 0 0 20px rgba(0, 255, 170, 0.3);
+        }
+
+        .neon-text-portal {
+            text-shadow: 0 0 10px rgba(0, 240, 255, 0.8), 0 0 20px rgba(168, 85, 247, 0.6);
+        }
+
+        .glass-card {
+            background: rgba(12, 16, 28, 0.88);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            border: 1px solid rgba(0, 255, 170, 0.18);
+        }
+
+        .glass-card-portal {
+            background: rgba(18, 12, 32, 0.90);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            border: 1px solid rgba(0, 240, 255, 0.35);
+        }
+
+        .btn-action {
+            background: linear-gradient(135deg, #00ffaa 0%, #00bfff 100%);
+            box-shadow: 0 0 15px rgba(0, 255, 170, 0.4);
+            transition: transform 0.1s active;
+        }
+
+        .btn-action:active {
+            transform: scale(0.95);
+        }
+
+        /* Enlarged & Ergonomic Touch D-Pad Buttons */
+        .dpad-button {
+            background: radial-gradient(circle, rgba(26, 33, 56, 0.95) 0%, rgba(15, 20, 36, 0.95) 100%);
+            border: 2px solid rgba(0, 255, 170, 0.4);
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.7), inset 0 1px 1px rgba(255, 255, 255, 0.1);
+            touch-action: manipulation;
+            transition: background 0.08s ease, border-color 0.08s ease, transform 0.08s ease;
+        }
+
+        .dpad-button:active, .dpad-button.active-pressed {
+            background: radial-gradient(circle, rgba(0, 255, 170, 0.45) 0%, rgba(0, 191, 255, 0.3) 100%);
+            border-color: #00ffaa;
+            box-shadow: 0 0 20px rgba(0, 255, 170, 0.6), inset 0 0 8px rgba(0, 255, 170, 0.4);
+            transform: scale(0.90);
+        }
+
+        /* Canvas Wrapper & Flex Constraints */
+        #canvas-container {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        canvas {
+            background-color: #090b14;
+            border: 2px solid rgba(0, 255, 170, 0.3);
+            border-radius: 12px;
+            box-shadow: 0 0 24px rgba(0, 255, 170, 0.15);
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        canvas.portal-active-border {
+            border-color: #00f0ff;
+            box-shadow: 0 0 30px rgba(0, 240, 255, 0.4), 0 0 10px rgba(168, 85, 247, 0.3);
+        }
+    </style>
+</head>
+<body class="flex flex-col justify-between items-center w-full h-full p-2.5 select-none">
+
+    <!-- Top Bar: Title & Action Buttons -->
+    <header class="w-full max-w-sm flex justify-between items-center shrink-0 mb-1">
+        <h1 class="font-orbitron text-base sm:text-lg font-black text-emerald-400 tracking-wider neon-text-green flex items-center gap-1.5">
+            🐍 SNAKE<span class="text-[9px] px-1.5 py-0.5 rounded bg-emerald-950/80 text-emerald-400 border border-emerald-500/30">MOBILE</span>
+        </h1>
+        <div class="flex items-center gap-1.5">
+            <!-- Home / Menu Button -->
+            <button id="home-btn" class="p-2 rounded-xl glass-card text-emerald-400 active:scale-90 transition" aria-label="Menu Inicial" title="Menu Inicial">
+                <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
+            </button>
+            <!-- Mute Toggle -->
+            <button id="sound-btn" class="p-2 rounded-xl glass-card text-gray-300 active:scale-90 transition" aria-label="Som" title="Som">
+                <svg id="sound-icon-on" class="w-4 h-4 sm:w-5 sm:h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072M18.364 5.636a9 9 0 010 12.728M11 5L6 9H2v6h4l5 4V5z"></path></svg>
+                <svg id="sound-icon-off" class="w-4 h-4 sm:w-5 sm:h-5 text-red-400 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2"></path></svg>
+            </button>
+            <!-- Pause Button -->
+            <button id="pause-btn" class="p-2 rounded-xl glass-card text-amber-400 active:scale-90 transition" aria-label="Pausa" title="Pausa">
+                <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            </button>
+        </div>
+    </header>
+
+    <!-- Score & Stats Bar -->
+    <div class="w-full max-w-sm flex justify-between items-center px-3.5 py-1.5 shrink-0 mb-1 glass-card rounded-xl border border-emerald-500/20">
+        <div class="flex flex-col">
+            <span class="text-[9px] uppercase tracking-widest text-gray-400 font-semibold">Pontos</span>
+            <span id="score-val" class="font-orbitron text-base sm:text-lg font-bold text-white">0</span>
+        </div>
+
+        <!-- Golden Apple Timer Indicator -->
+        <div id="golden-timer-container" class="hidden flex-col items-center w-20">
+            <span class="text-[8px] uppercase font-bold text-amber-400 animate-pulse">Maçã Ouro</span>
+            <div class="w-full bg-gray-800 h-1.5 rounded-full overflow-hidden mt-0.5 border border-amber-500/30">
+                <div id="golden-timer-bar" class="bg-amber-400 h-full w-full"></div>
+            </div>
+        </div>
+
+        <!-- Portal Mode Timer Indicator -->
+        <div id="portal-timer-container" class="hidden flex-col items-center w-24">
+            <span class="text-[8px] uppercase font-bold text-cyan-400 animate-pulse neon-text-portal">🌀 Modo Portal</span>
+            <div class="w-full bg-gray-900 h-1.5 rounded-full overflow-hidden mt-0.5 border border-cyan-400/40">
+                <div id="portal-timer-bar" class="bg-gradient-to-r from-cyan-400 to-purple-500 h-full w-full"></div>
+            </div>
+        </div>
+
+        <div class="flex flex-col items-end">
+            <span class="text-[9px] uppercase tracking-widest text-gray-400 font-semibold">Recorde</span>
+            <span id="high-score-val" class="font-orbitron text-base sm:text-lg font-bold text-emerald-400">0</span>
+        </div>
+    </div>
+
+    <!-- Flexible Game Board Container -->
+    <main class="w-full max-w-sm flex-1 min-h-0 my-auto flex items-center justify-center relative">
+        <div id="canvas-container">
+            <canvas id="gameCanvas" width="360" height="360"></canvas>
+
+            <!-- Main Menu Overlay -->
+            <div id="menu-overlay" class="absolute inset-0 rounded-xl glass-card flex flex-col justify-center items-center p-5 text-center z-20">
+                <h2 class="font-orbitron text-2xl font-black text-white mb-0.5 tracking-wider">SNAKE</h2>
+                <p class="text-[10px] text-emerald-400 mb-4 font-orbitron tracking-widest uppercase">Edição Neon Mobile</p>
+
+                <div class="w-full max-w-xs mb-5 space-y-2 text-left">
+                    <label class="text-[10px] text-gray-400 uppercase font-semibold block">Dificuldade</label>
+                    <div class="grid grid-cols-3 gap-1.5">
+                        <button class="diff-btn py-2 text-[11px] font-orbitron font-bold rounded-lg border border-gray-700 bg-gray-800/80 text-gray-300" data-diff="easy">Fácil</button>
+                        <button class="diff-btn py-2 text-[11px] font-orbitron font-bold rounded-lg border border-emerald-500 bg-emerald-500/20 text-emerald-400" data-diff="medium">Médio</button>
+                        <button class="diff-btn py-2 text-[11px] font-orbitron font-bold rounded-lg border border-gray-700 bg-gray-800/80 text-gray-300" data-diff="hard">Difícil</button>
+                    </div>
+                </div>
+
+                <div class="text-[10px] text-gray-400 mb-4 space-y-1 bg-black/40 p-2.5 rounded-lg border border-white/5 text-left w-full max-w-xs">
+                    <p class="text-amber-400 font-bold">🍎 Tipos de Maçãs:</p>
+                    <p>• <span class="text-red-400">Vermelha:</span> +10 pontos</p>
+                    <p>• <span class="text-amber-400">Dourada:</span> +30 pontos (tempo limite)</p>
+                    <p>• <span class="text-cyan-400">Portal (🌀):</span> Atravessa paredes por 10s!</p>
+                </div>
+
+                <button id="start-btn" class="btn-action text-gray-950 font-orbitron font-black text-base py-3 px-6 rounded-xl w-full max-w-xs tracking-wider">
+                    INICIAR JOGO
+                </button>
+            </div>
+
+            <!-- Pause Overlay -->
+            <div id="pause-overlay" class="hidden absolute inset-0 rounded-xl glass-card flex flex-col justify-center items-center p-5 text-center z-20">
+                <h2 class="font-orbitron text-2xl font-bold text-amber-400 mb-4 tracking-wider">EM PAUSA</h2>
+                <div class="flex flex-col gap-2.5 w-full max-w-xs">
+                    <button id="resume-btn" class="btn-action text-gray-950 font-orbitron font-bold py-2.5 rounded-xl">CONTINUAR</button>
+                    <button id="restart-from-pause" class="glass-card text-white font-orbitron text-xs py-2.5 rounded-xl border border-white/20">REINICIAR</button>
+                    <button id="menu-from-pause" class="glass-card text-emerald-400 font-orbitron text-xs py-2.5 rounded-xl border border-emerald-500/30">MENU INICIAL</button>
+                </div>
+            </div>
+
+            <!-- Game Over Overlay -->
+            <div id="gameover-overlay" class="hidden absolute inset-0 rounded-xl glass-card flex flex-col justify-center items-center p-5 text-center z-20">
+                <div class="text-3xl mb-1">💀</div>
+                <h2 class="font-orbitron text-xl font-black text-red-500 mb-0.5 tracking-wider">FIM DE JOGO</h2>
+                <p id="gameover-reason" class="text-[11px] text-gray-400 mb-3">Colisão detetada!</p>
+
+                <div class="glass-card border border-white/10 rounded-xl p-3 w-full max-w-xs mb-4 space-y-1">
+                    <div class="flex justify-between items-center text-xs">
+                        <span class="text-gray-400">Pontuação:</span>
+                        <span id="final-score" class="font-orbitron font-bold text-white">0</span>
+                    </div>
+                    <div class="flex justify-between items-center text-xs">
+                        <span class="text-gray-400">Melhor Recorde:</span>
+                        <span id="final-highscore" class="font-orbitron font-bold text-emerald-400">0</span>
+                    </div>
+                </div>
+
+                <div class="flex flex-col gap-2 w-full max-w-xs">
+                    <button id="restart-btn" class="btn-action text-gray-950 font-orbitron font-black text-sm py-2.5 px-6 rounded-xl w-full">
+                        JOGAR DE NOVO
+                    </button>
+                    <button id="menu-from-gameover" class="glass-card text-emerald-400 font-orbitron text-xs py-2 rounded-xl border border-emerald-500/30 w-full">
+                        MENU INICIAL
+                    </button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Virtual Controls Section (Enlarged Ergonomic D-Pad for Mobile) -->
+    <footer class="w-full max-w-sm shrink-0 safe-bottom-padding pt-1 flex justify-center items-center">
+        <!-- Enlarged D-Pad Grid (Scaled up for high touch accuracy) -->
+        <div class="grid grid-cols-3 gap-2 w-52 h-52 sm:w-60 sm:h-60">
+            <div></div>
+            <button id="dpad-up" class="dpad-button rounded-2xl flex items-center justify-center text-2xl sm:text-3xl text-emerald-400" aria-label="Cima">▲</button>
+            <div></div>
+            
+            <button id="dpad-left" class="dpad-button rounded-2xl flex items-center justify-center text-2xl sm:text-3xl text-emerald-400" aria-label="Esquerda">◄</button>
+            <div class="flex items-center justify-center">
+                <div id="dpad-center-node" class="w-4 h-4 rounded-full bg-emerald-500/20 border border-emerald-500/40 transition-all duration-300"></div>
+            </div>
+            <button id="dpad-right" class="dpad-button rounded-2xl flex items-center justify-center text-2xl sm:text-3xl text-emerald-400" aria-label="Direita">►</button>
+            
+            <div></div>
+            <button id="dpad-down" class="dpad-button rounded-2xl flex items-center justify-center text-2xl sm:text-3xl text-emerald-400" aria-label="Baixo">▼</button>
+            <div></div>
+        </div>
+    </footer>
+
+    <script>
+        // Web Audio Synthesizer
+        class AudioSynth {
+            constructor() {
+                this.ctx = null;
+                this.muted = false;
+            }
+
+            init() {
+                if (!this.ctx) {
+                    const AudioContext = window.AudioContext || window.webkitAudioContext;
+                    if (AudioContext) this.ctx = new AudioContext();
+                }
+                if (this.ctx && this.ctx.state === 'suspended') {
+                    this.ctx.resume();
+                }
+            }
+
+            playEat() {
+                if (this.muted) return;
+                this.init();
+                if (!this.ctx) return;
+
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(280, this.ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(560, this.ctx.currentTime + 0.07);
+
+                gain.gain.setValueAtTime(0.1, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.07);
+
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.07);
+            }
+
+            playGolden() {
+                if (this.muted) return;
+                this.init();
+                if (!this.ctx) return;
+
+                const now = this.ctx.currentTime;
+                [440, 554, 659, 880].forEach((freq, i) => {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(freq, now + i * 0.04);
+                    gain.gain.setValueAtTime(0.12, now + i * 0.04);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.04 + 0.09);
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start(now + i * 0.04);
+                    osc.stop(now + i * 0.04 + 0.09);
+                });
+            }
+
+            playPortalEat() {
+                if (this.muted) return;
+                this.init();
+                if (!this.ctx) return;
+
+                const now = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(300, now);
+                osc.frequency.exponentialRampToValueAtTime(1200, now + 0.25);
+
+                gain.gain.setValueAtTime(0.15, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
+
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start(now);
+                osc.stop(now + 0.25);
+            }
+
+            playTeleport() {
+                if (this.muted) return;
+                this.init();
+                if (!this.ctx) return;
+
+                const now = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(900, now);
+                osc.frequency.exponentialRampToValueAtTime(250, now + 0.15);
+
+                gain.gain.setValueAtTime(0.14, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start(now);
+                osc.stop(now + 0.15);
+            }
+
+            playGameOver() {
+                if (this.muted) return;
+                this.init();
+                if (!this.ctx) return;
+
+                const now = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(200, now);
+                osc.frequency.exponentialRampToValueAtTime(40, now + 0.35);
+
+                gain.gain.setValueAtTime(0.18, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.35);
+
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start(now);
+                osc.stop(now + 0.35);
+            }
+        }
+
+        const audio = new AudioSynth();
+
+        // Game Constants
+        const GRID_SIZE = 20;
+        const CANVAS = document.getElementById('gameCanvas');
+        const CTX = CANVAS.getContext('2d');
+
+        const SPEEDS = { easy: 130, medium: 90, hard: 60 };
+
+        // Game State
+        let snake = [];
+        let direction = { x: 0, y: -1 };
+        let nextDirection = { x: 0, y: -1 };
+        let food = { x: 0, y: 0 };
+        let goldenFood = null;
+        let portalFood = null;
+        let portalModeEndTime = 0;
+        let score = 0;
+        let highScore = parseInt(localStorage.getItem('snake_hs_mobile') || '0', 10);
+        let selectedDifficulty = 'medium';
+        let gameInterval = null;
+        let gameState = 'MENU';
+        let particles = [];
+
+        // DOM Elements
+        const scoreVal = document.getElementById('score-val');
+        const highScoreVal = document.getElementById('high-score-val');
+        const menuOverlay = document.getElementById('menu-overlay');
+        const pauseOverlay = document.getElementById('pause-overlay');
+        const gameoverOverlay = document.getElementById('gameover-overlay');
+        const goldenContainer = document.getElementById('golden-timer-container');
+        const goldenBar = document.getElementById('golden-timer-bar');
+        const portalContainer = document.getElementById('portal-timer-container');
+        const portalBar = document.getElementById('portal-timer-bar');
+        const soundBtn = document.getElementById('sound-btn');
+        const soundIconOn = document.getElementById('sound-icon-on');
+        const soundIconOff = document.getElementById('sound-icon-off');
+        const dpadCenterNode = document.getElementById('dpad-center-node');
+
+        highScoreVal.textContent = highScore;
+
+        function isPortalActive() {
+            return Date.now() < portalModeEndTime;
+        }
+
+        function resetGame() {
+            snake = [
+                { x: 10, y: 12 },
+                { x: 10, y: 13 },
+                { x: 10, y: 14 }
+            ];
+            direction = { x: 0, y: -1 };
+            nextDirection = { x: 0, y: -1 };
+            score = 0;
+            goldenFood = null;
+            portalFood = null;
+            portalModeEndTime = 0;
+            particles = [];
+            scoreVal.textContent = '0';
+            goldenContainer.classList.add('hidden');
+            portalContainer.classList.add('hidden');
+            CANVAS.classList.remove('portal-active-border');
+            dpadCenterNode.className = "w-4 h-4 rounded-full bg-emerald-500/20 border border-emerald-500/40 transition-all duration-300";
+            spawnFood();
+        }
+
+        function spawnFood() {
+            let valid = false;
+            while (!valid) {
+                food = {
+                    x: Math.floor(Math.random() * GRID_SIZE),
+                    y: Math.floor(Math.random() * GRID_SIZE)
+                };
+                valid = !snake.some(seg => seg.x === food.x && seg.y === food.y);
+            }
+        }
+
+        function trySpawnSpecialFood() {
+            const now = Date.now();
+            
+            // Try spawning Golden Food
+            if (!goldenFood && Math.random() < 0.25) {
+                let valid = false;
+                let pos = { x: 0, y: 0 };
+                while (!valid) {
+                    pos = {
+                        x: Math.floor(Math.random() * GRID_SIZE),
+                        y: Math.floor(Math.random() * GRID_SIZE)
+                    };
+                    valid = !snake.some(s => s.x === pos.x && s.y === pos.y) && 
+                            (pos.x !== food.x || pos.y !== food.y);
+                }
+                goldenFood = { x: pos.x, y: pos.y, spawnTime: now, duration: 5000 };
+                goldenContainer.classList.remove('hidden');
+                goldenBar.style.width = '100%';
+            }
+
+            // Try spawning Portal Food
+            if (!portalFood && !isPortalActive() && Math.random() < 0.3) {
+                let valid = false;
+                let pos = { x: 0, y: 0 };
+                while (!valid) {
+                    pos = {
+                        x: Math.floor(Math.random() * GRID_SIZE),
+                        y: Math.floor(Math.random() * GRID_SIZE)
+                    };
+                    valid = !snake.some(s => s.x === pos.x && s.y === pos.y) && 
+                            (pos.x !== food.x || pos.y !== food.y) &&
+                            (!goldenFood || pos.x !== goldenFood.x || pos.y !== goldenFood.y);
+                }
+                portalFood = { x: pos.x, y: pos.y, spawnTime: now, duration: 6000 };
+            }
+        }
+
+        function createParticles(x, y, color, count = 10) {
+            const cellSize = CANVAS.width / GRID_SIZE;
+            const px = x * cellSize + cellSize / 2;
+            const py = y * cellSize + cellSize / 2;
+
+            for (let i = 0; i < count; i++) {
+                const angle = Math.random() * Math.PI * 2;
+                const speed = Math.random() * 3 + 1;
+                particles.push({
+                    x: px, y: py,
+                    vx: Math.cos(angle) * speed,
+                    vy: Math.sin(angle) * speed,
+                    color: color, life: 1.0,
+                    decay: Math.random() * 0.05 + 0.03
+                });
+            }
+        }
+
+        function updateParticles() {
+            for (let i = particles.length - 1; i >= 0; i--) {
+                const p = particles[i];
+                p.x += p.vx;
+                p.y += p.vy;
+                p.life -= p.decay;
+                if (p.life <= 0) particles.splice(i, 1);
+            }
+        }
+
+        function setDirection(newDir) {
+            if (newDir.x === -direction.x && newDir.y === -direction.y) return;
+            nextDirection = newDir;
+        }
+
+        // Direct Pointer Listeners for Touch Control Responsiveness with Visual Feedback
+        const registerDpadBtn = (id, dir) => {
+            const btn = document.getElementById(id);
+            
+            const handlePress = (e) => {
+                e.preventDefault();
+                setDirection(dir);
+                btn.classList.add('active-pressed');
+            };
+
+            const handleRelease = (e) => {
+                e.preventDefault();
+                btn.classList.remove('active-pressed');
+            };
+
+            btn.addEventListener('pointerdown', handlePress);
+            btn.addEventListener('pointerup', handleRelease);
+            btn.addEventListener('pointerleave', handleRelease);
+            btn.addEventListener('pointercancel', handleRelease);
+        };
+
+        registerDpadBtn('dpad-up', { x: 0, y: -1 });
+        registerDpadBtn('dpad-down', { x: 0, y: 1 });
+        registerDpadBtn('dpad-left', { x: -1, y: 0 });
+        registerDpadBtn('dpad-right', { x: 1, y: 0 });
+
+        // Touch Swipe Handling on Canvas
+        let touchStartX = 0, touchStartY = 0;
+        CANVAS.addEventListener('touchstart', (e) => {
+            if (e.touches.length > 0) {
+                touchStartX = e.touches[0].clientX;
+                touchStartY = e.touches[0].clientY;
+            }
+        }, { passive: true });
+
+        CANVAS.addEventListener('touchend', (e) => {
+            if (gameState !== 'PLAYING' || e.changedTouches.length === 0) return;
+            const dx = e.changedTouches[0].clientX - touchStartX;
+            const dy = e.changedTouches[0].clientY - touchStartY;
+            const minSwipe = 20;
+
+            if (Math.abs(dx) > Math.abs(dy)) {
+                if (Math.abs(dx) > minSwipe) setDirection(dx > 0 ? { x: 1, y: 0 } : { x: -1, y: 0 });
+            } else {
+                if (Math.abs(dy) > minSwipe) setDirection(dy > 0 ? { x: 0, y: 1 } : { x: 0, y: -1 });
+            }
+        }, { passive: true });
+
+        // Keyboard Controls
+        window.addEventListener('keydown', (e) => {
+            if (gameState !== 'PLAYING') return;
+            switch (e.key) {
+                case 'ArrowUp': case 'w': case 'W': setDirection({ x: 0, y: -1 }); e.preventDefault(); break;
+                case 'ArrowDown': case 's': case 'S': setDirection({ x: 0, y: 1 }); e.preventDefault(); break;
+                case 'ArrowLeft': case 'a': case 'A': setDirection({ x: -1, y: 0 }); e.preventDefault(); break;
+                case 'ArrowRight': case 'd': case 'D': setDirection({ x: 1, y: 0 }); e.preventDefault(); break;
+                case 'p': case 'P': case ' ': togglePause(); e.preventDefault(); break;
+            }
+        });
+
+        function gameTick() {
+            if (gameState !== 'PLAYING') return;
+
+            direction = nextDirection;
+            let head = { x: snake[0].x + direction.x, y: snake[0].y + direction.y };
+
+            // Wall Collision or Portal Wall Traversal
+            if (head.x < 0 || head.x >= GRID_SIZE || head.y < 0 || head.y >= GRID_SIZE) {
+                if (isPortalActive()) {
+                    // Wrap around to opposite side
+                    if (head.x < 0) head.x = GRID_SIZE - 1;
+                    else if (head.x >= GRID_SIZE) head.x = 0;
+                    if (head.y < 0) head.y = GRID_SIZE - 1;
+                    else if (head.y >= GRID_SIZE) head.y = 0;
+
+                    audio.playTeleport();
+                    createParticles(head.x, head.y, '#00f0ff', 14);
+                } else {
+                    triggerGameOver('Bateu na parede!');
+                    return;
+                }
+            }
+
+            // Self Collision Check
+            if (snake.some(s => s.x === head.x && s.y === head.y)) {
+                triggerGameOver('Bateu no próprio corpo!');
+                return;
+            }
+
+            snake.unshift(head);
+
+            const now = Date.now();
+
+            // Handle Golden Food Timer
+            if (goldenFood) {
+                const elapsed = now - goldenFood.spawnTime;
+                const rem = Math.max(0, 1 - elapsed / goldenFood.duration);
+                goldenBar.style.width = (rem * 100) + '%';
+                if (elapsed >= goldenFood.duration) {
+                    goldenFood = null;
+                    goldenContainer.classList.add('hidden');
+                }
+            }
+
+            // Handle Active Portal Mode Timer
+            if (isPortalActive()) {
+                const rem = Math.max(0, (portalModeEndTime - now) / 10000);
+                portalBar.style.width = (rem * 100) + '%';
+                if (now >= portalModeEndTime) {
+                    portalContainer.classList.add('hidden');
+                    CANVAS.classList.remove('portal-active-border');
+                    dpadCenterNode.className = "w-4 h-4 rounded-full bg-emerald-500/20 border border-emerald-500/40 transition-all duration-300";
+                }
+            }
+
+            // Handle Uncollected Portal Food Expiration
+            if (portalFood && !isPortalActive()) {
+                if (now - portalFood.spawnTime >= portalFood.duration) {
+                    portalFood = null;
+                }
+            }
+
+            // Check Eating Foods
+            if (head.x === food.x && head.y === food.y) {
+                score += 10;
+                scoreVal.textContent = score;
+                audio.playEat();
+                createParticles(food.x, food.y, '#00ffaa', 10);
+                spawnFood();
+                trySpawnSpecialFood();
+            } else if (goldenFood && head.x === goldenFood.x && head.y === goldenFood.y) {
+                score += 30;
+                scoreVal.textContent = score;
+                audio.playGolden();
+                createParticles(goldenFood.x, goldenFood.y, '#fbbf24', 16);
+                goldenFood = null;
+                goldenContainer.classList.add('hidden');
+            } else if (portalFood && head.x === portalFood.x && head.y === portalFood.y) {
+                score += 20;
+                scoreVal.textContent = score;
+                audio.playPortalEat();
+                createParticles(portalFood.x, portalFood.y, '#00f0ff', 20);
+                portalFood = null;
+                portalModeEndTime = now + 10000; // Activate Portal Mode for 10 seconds
+                portalContainer.classList.remove('hidden');
+                CANVAS.classList.add('portal-active-border');
+                dpadCenterNode.className = "w-4 h-4 rounded-full bg-cyan-400 border border-purple-400 animate-ping shadow-[0_0_10px_#00f0ff]";
+            } else {
+                snake.pop();
+            }
+
+            if (score > highScore) {
+                highScore = score;
+                highScoreVal.textContent = highScore;
+                localStorage.setItem('snake_hs_mobile', highScore.toString());
+            }
+        }
+
+        function render() {
+            const cellSize = CANVAS.width / GRID_SIZE;
+            const portalActive = isPortalActive();
+
+            // Clear Background
+            CTX.fillStyle = portalActive ? '#060a17' : '#090b14';
+            CTX.fillRect(0, 0, CANVAS.width, CANVAS.height);
+
+            // Draw Subtle Grid Lines
+            CTX.strokeStyle = portalActive ? 'rgba(0, 240, 255, 0.05)' : 'rgba(255, 255, 255, 0.025)';
+            CTX.lineWidth = 1;
+            for (let i = 0; i <= GRID_SIZE; i++) {
+                CTX.beginPath(); CTX.moveTo(i * cellSize, 0); CTX.lineTo(i * cellSize, CANVAS.height); CTX.stroke();
+                CTX.beginPath(); CTX.moveTo(0, i * cellSize); CTX.lineTo(CANVAS.width, i * cellSize); CTX.stroke();
+            }
+
+            // Draw Normal Red Apple
+            CTX.save();
+            CTX.shadowColor = '#ff3366';
+            CTX.shadowBlur = 10;
+            CTX.fillStyle = '#ff3366';
+            CTX.beginPath();
+            CTX.arc(food.x * cellSize + cellSize / 2, food.y * cellSize + cellSize / 2, (cellSize / 2) * 0.7, 0, Math.PI * 2);
+            CTX.fill();
+            CTX.restore();
+
+            // Draw Golden Apple
+            if (goldenFood) {
+                CTX.save();
+                const pulse = Math.sin(Date.now() / 90) * 1.5;
+                CTX.shadowColor = '#fbbf24';
+                CTX.shadowBlur = 14;
+                CTX.fillStyle = '#fbbf24';
+                CTX.beginPath();
+                CTX.arc(goldenFood.x * cellSize + cellSize / 2, goldenFood.y * cellSize + cellSize / 2, (cellSize / 2) * 0.75 + pulse, 0, Math.PI * 2);
+                CTX.fill();
+                CTX.restore();
+            }
+
+            // Draw Portal Apple
+            if (portalFood && !portalActive) {
+                CTX.save();
+                const pulse = Math.sin(Date.now() / 70) * 2;
+                const cx = portalFood.x * cellSize + cellSize / 2;
+                const cy = portalFood.y * cellSize + cellSize / 2;
+
+                CTX.shadowColor = '#00f0ff';
+                CTX.shadowBlur = 16;
+                
+                // Outer Cyan Ring
+                CTX.strokeStyle = '#00f0ff';
+                CTX.lineWidth = 2;
+                CTX.beginPath();
+                CTX.arc(cx, cy, (cellSize / 2) * 0.8 + pulse, 0, Math.PI * 2);
+                CTX.stroke();
+
+                // Inner Purple Core
+                CTX.fillStyle = '#a855f7';
+                CTX.beginPath();
+                CTX.arc(cx, cy, (cellSize / 2) * 0.5, 0, Math.PI * 2);
+                CTX.fill();
+
+                CTX.restore();
+            }
+
+            // Draw Snake Body
+            snake.forEach((seg, i) => {
+                CTX.save();
+                if (portalActive) {
+                    // Portal Aura Snake
+                    if (i === 0) {
+                        CTX.shadowColor = '#00f0ff';
+                        CTX.shadowBlur = 16;
+                        CTX.fillStyle = '#00f0ff';
+                    } else {
+                        CTX.shadowColor = '#a855f7';
+                        CTX.shadowBlur = 6;
+                        CTX.fillStyle = `rgba(168, 85, 247, ${Math.max(0.4, 1 - i / (snake.length * 1.1))})`;
+                    }
+                } else {
+                    // Normal Snake
+                    if (i === 0) {
+                        CTX.shadowColor = '#00ffaa';
+                        CTX.shadowBlur = 12;
+                        CTX.fillStyle = '#00ffaa';
+                    } else {
+                        CTX.fillStyle = `rgba(0, 204, 136, ${Math.max(0.35, 1 - i / (snake.length * 1.1))})`;
+                    }
+                }
+
+                const px = seg.x * cellSize + 1;
+                const py = seg.y * cellSize + 1;
+                const pSize = cellSize - 2;
+
+                CTX.beginPath();
+                CTX.roundRect(px, py, pSize, pSize, i === 0 ? 5 : 3);
+                CTX.fill();
+
+                // Eyes on Head
+                if (i === 0) {
+                    CTX.fillStyle = '#05070e';
+                    const off = cellSize * 0.25;
+                    const sz = cellSize * 0.14;
+                    let e1x = px + off, e1y = py + off, e2x = px + pSize - off, e2y = py + off;
+
+                    if (direction.x === 1) { e1x = e2x = px + pSize - off; e1y = py + off; e2y = py + pSize - off; }
+                    else if (direction.x === -1) { e1x = e2x = px + off; e1y = py + off; e2y = py + pSize - off; }
+                    else if (direction.y === 1) { e1y = e2y = py + pSize - off; e1x = px + off; e2x = px + pSize - off; }
+
+                    CTX.beginPath();
+                    CTX.arc(e1x, e1y, sz, 0, Math.PI * 2);
+                    CTX.arc(e2x, e2y, sz, 0, Math.PI * 2);
+                    CTX.fill();
+                }
+                CTX.restore();
+            });
+
+            // Draw Particles
+            particles.forEach(p => {
+                CTX.save();
+                CTX.globalAlpha = p.life;
+                CTX.fillStyle = p.color;
+                CTX.beginPath();
+                CTX.arc(p.x, p.y, 2.2, 0, Math.PI * 2);
+                CTX.fill();
+                CTX.restore();
+            });
+        }
+
+        function animationLoop() {
+            updateParticles();
+            render();
+            requestAnimationFrame(animationLoop);
+        }
+
+        function startGame() {
+            audio.init();
+            resetGame();
+            gameState = 'PLAYING';
+            menuOverlay.classList.add('hidden');
+            pauseOverlay.classList.add('hidden');
+            gameoverOverlay.classList.add('hidden');
+
+            if (gameInterval) clearInterval(gameInterval);
+            gameInterval = setInterval(gameTick, SPEEDS[selectedDifficulty]);
+        }
+
+        function returnToHomeMenu() {
+            gameState = 'MENU';
+            if (gameInterval) clearInterval(gameInterval);
+            pauseOverlay.classList.add('hidden');
+            gameoverOverlay.classList.add('hidden');
+            menuOverlay.classList.remove('hidden');
+            resetGame();
+        }
+
+        function togglePause() {
+            if (gameState === 'PLAYING') {
+                gameState = 'PAUSED';
+                clearInterval(gameInterval);
+                pauseOverlay.classList.remove('hidden');
+            } else if (gameState === 'PAUSED') {
+                gameState = 'PLAYING';
+                pauseOverlay.classList.add('hidden');
+                gameInterval = setInterval(gameTick, SPEEDS[selectedDifficulty]);
+            }
+        }
+
+        function triggerGameOver(reason) {
+            gameState = 'GAMEOVER';
+            clearInterval(gameInterval);
+            audio.playGameOver();
+            createParticles(snake[0].x, snake[0].y, '#ff3366', 25);
+
+            document.getElementById('gameover-reason').textContent = reason;
+            document.getElementById('final-score').textContent = score;
+            document.getElementById('final-highscore').textContent = highScore;
+            gameoverOverlay.classList.remove('hidden');
+        }
+
+        // Button Listeners
+        soundBtn.addEventListener('click', () => {
+            audio.muted = !audio.muted;
+            soundIconOn.classList.toggle('hidden', audio.muted);
+            soundIconOff.classList.toggle('hidden', !audio.muted);
+        });
+
+        document.getElementById('home-btn').addEventListener('click', returnToHomeMenu);
+        document.getElementById('menu-from-pause').addEventListener('click', returnToHomeMenu);
+        document.getElementById('menu-from-gameover').addEventListener('click', returnToHomeMenu);
+
+        document.querySelectorAll('.diff-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                document.querySelectorAll('.diff-btn').forEach(b => {
+                    b.classList.remove('border-emerald-500', 'bg-emerald-500/20', 'text-emerald-400');
+                    b.classList.add('border-gray-700', 'bg-gray-800/80', 'text-gray-300');
+                });
+                const t = e.currentTarget;
+                t.classList.remove('border-gray-700', 'bg-gray-800/80', 'text-gray-300');
+                t.classList.add('border-emerald-500', 'bg-emerald-500/20', 'text-emerald-400');
+                selectedDifficulty = t.dataset.diff;
+            });
+        });
+
+        document.getElementById('start-btn').addEventListener('click', startGame);
+        document.getElementById('restart-btn').addEventListener('click', startGame);
+        document.getElementById('resume-btn').addEventListener('click', togglePause);
+        document.getElementById('pause-btn').addEventListener('click', togglePause);
+        document.getElementById('restart-from-pause').addEventListener('click', startGame);
+
+        // Dynamic Canvas Sizing Based on Responsive Viewport Space
+        function resizeCanvas() {
+            const container = document.getElementById('canvas-container');
+            const parent = container.parentElement;
+            
+            if (parent) {
+                const availableWidth = parent.clientWidth;
+                const availableHeight = parent.clientHeight;
+                const size = Math.floor(Math.min(availableWidth, availableHeight));
+
+                if (size > 0) {
+                    CANVAS.width = size;
+                    CANVAS.height = size;
+                    container.style.width = size + 'px';
+                    container.style.height = size + 'px';
+                }
+            }
+        }
+
+        window.addEventListener('resize', resizeCanvas);
+        window.addEventListener('load', () => {
+            resizeCanvas();
+            render();
+            requestAnimationFrame(animationLoop);
+        });
+    </script>
+</body>
+</html>
