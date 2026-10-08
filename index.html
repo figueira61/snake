@@ -148,14 +148,14 @@
             🐍 SNAKE<span class="text-[9px] px-1.5 py-0.5 rounded bg-emerald-950/80 text-emerald-400 border border-emerald-500/30">MOBILE</span>
         </h1>
         <div class="flex items-center gap-1.5">
-            <!-- Voltar ao Templo do Retro -->
-            <a id="temple-btn" href="https://figueira61.github.io/Templo-do-Retro/" class="p-2 rounded-xl glass-card text-cyan-400 active:scale-90 transition" aria-label="Voltar ao Templo do Retro" title="Voltar ao Templo do Retro">
-                <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
-            </a>
-            <!-- Home / Menu Button -->
+            <!-- Voltar ao ecrã inicial do jogo (seta para trás) -->
             <button id="home-btn" class="p-2 rounded-xl glass-card text-emerald-400 active:scale-90 transition" aria-label="Menu Inicial" title="Menu Inicial">
-                <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
+                <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
             </button>
+            <!-- Voltar ao Templo do Retro (casa) -->
+            <a id="temple-btn" href="https://figueira61.github.io/Templo-do-Retro/" class="p-2 rounded-xl glass-card text-cyan-400 active:scale-90 transition" aria-label="Voltar ao Templo do Retro" title="Voltar ao Templo do Retro">
+                <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
+            </a>
             <!-- Mute Toggle -->
             <button id="sound-btn" class="p-2 rounded-xl glass-card text-gray-300 active:scale-90 transition" aria-label="Som" title="Som">
                 <svg id="sound-icon-on" class="w-4 h-4 sm:w-5 sm:h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072M18.364 5.636a9 9 0 010 12.728M11 5L6 9H2v6h4l5 4V5z"></path></svg>
@@ -294,23 +294,6 @@
             <div></div>
         </div>
     </footer>
-
-    <!-- Login (nome + PIN) -->
-    <div id="rt-login" class="rt-sobre" hidden>
-        <form id="rt-form" class="rt-caixa" autocomplete="off">
-            <h2>🐍 TEMPLO DO RETRO</h2>
-            <p class="rt-sub">Escolhe o teu nome de jogador (único) e um PIN de 4 a 6 dígitos.</p>
-            <div class="rt-abas">
-                <button type="button" class="rt-aba on" id="rt-aba-entrar">ENTRAR</button>
-                <button type="button" class="rt-aba" id="rt-aba-criar">CRIAR JOGADOR</button>
-            </div>
-            <input id="rt-nome" type="text" maxlength="16" placeholder="Nome de jogador" autocapitalize="off" autocorrect="off" spellcheck="false" aria-label="Nome de jogador">
-            <input id="rt-pin" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="6" placeholder="PIN (4 a 6 dígitos)" aria-label="PIN">
-            <div id="rt-erro" class="rt-erro" role="alert"></div>
-            <button type="submit" id="rt-ok" class="rt-btn principal">ENTRAR</button>
-            <button type="button" id="rt-offline" class="rt-btn sec" hidden>JOGAR SEM RANKING</button>
-        </form>
-    </div>
 
     <!-- Hall of Fame global -->
     <div id="rt-hall" class="rt-sobre" hidden>
@@ -1047,51 +1030,20 @@ var RETRO = (function () {
 
 
         // ===== Multiplayer (Supabase) =====
-        const rtLogin = document.getElementById('rt-login');
+        // Login / criar jogador existem só no portal (Templo do Retro).
+        // Aqui usa-se a sessão partilhada (localStorage "retro.sessao"), se existir.
         const rtHall = document.getElementById('rt-hall');
-        const rtNome = document.getElementById('rt-nome');
-        const rtPin = document.getElementById('rt-pin');
-        const rtErro = document.getElementById('rt-erro');
-        const rtOk = document.getElementById('rt-ok');
-        const rtOffline = document.getElementById('rt-offline');
-        let rtModo = 'entrar';
-        let rtSemRanking = false;
 
         function rtMostraJogador() {
             const el = document.getElementById('rt-jog');
             const s = RETRO.sessao();
             if (s) {
-                el.innerHTML = 'Jogador: <b>' + RETRO.esc(s.username) + '</b> <button type="button" id="rt-sair">Sair</button>';
-                document.getElementById('rt-sair').addEventListener('click', () => {
-                    RETRO.sair();
-                    rtSemRanking = false;
-                    rtMostraJogador();
-                    rtAbreLogin();
-                });
-            } else if (rtSemRanking) {
-                el.innerHTML = 'Sem ranking <button type="button" id="rt-entrar-menu">Entrar</button>';
-                document.getElementById('rt-entrar-menu').addEventListener('click', rtAbreLogin);
+                el.innerHTML = 'Jogador: <b>' + RETRO.esc(s.username) + '</b>';
             } else {
-                el.textContent = '';
+                el.innerHTML = 'Sem ranking · <a href="https://figueira61.github.io/Templo-do-Retro/" style="color:#22d3ee;text-decoration:underline">entra no Templo</a>';
             }
         }
-        function rtModoSet(m) {
-            rtModo = m;
-            document.getElementById('rt-aba-entrar').classList.toggle('on', m === 'entrar');
-            document.getElementById('rt-aba-criar').classList.toggle('on', m === 'criar');
-            rtOk.textContent = m === 'entrar' ? 'ENTRAR' : 'CRIAR E ENTRAR';
-            rtErro.textContent = '';
-        }
-        function rtAbreLogin() {
-            rtErro.textContent = '';
-            rtPin.value = '';
-            rtOffline.hidden = true;
-            rtLogin.hidden = false;
-            setTimeout(() => rtNome.focus(), 50);
-        }
         function rtAposLogin() {
-            rtLogin.hidden = true;
-            rtSemRanking = false;
             rtMostraJogador();
             RETRO.minhasStats().then(r => {
                 if (r && r.ok) {
@@ -1102,31 +1054,6 @@ var RETRO = (function () {
                 }
             }).catch(() => {});
         }
-        document.getElementById('rt-aba-entrar').addEventListener('click', () => rtModoSet('entrar'));
-        document.getElementById('rt-aba-criar').addEventListener('click', () => rtModoSet('criar'));
-        document.getElementById('rt-form').addEventListener('submit', (ev) => {
-            ev.preventDefault();
-            const nome = rtNome.value.trim();
-            const pin = rtPin.value.trim();
-            if (nome.length < 2) { rtErro.textContent = 'Escreve o teu nome de jogador.'; return; }
-            if (!/^[0-9]{4,6}$/.test(pin)) { rtErro.textContent = 'O PIN tem de ter 4 a 6 dígitos.'; return; }
-            rtErro.textContent = '';
-            rtOk.disabled = true;
-            (rtModo === 'entrar' ? RETRO.entrar(nome, pin) : RETRO.criar(nome, pin)).then(r => {
-                rtOk.disabled = false;
-                if (r && r.ok) { rtAposLogin(); } else { rtErro.textContent = RETRO.mensagemErro(r); }
-            }, () => {
-                rtOk.disabled = false;
-                rtErro.textContent = 'Sem ligação ao servidor. Tenta de novo ou joga sem ranking.';
-                rtOffline.hidden = false;
-            });
-        });
-        rtOffline.addEventListener('click', () => {
-            rtSemRanking = true;
-            rtLogin.hidden = true;
-            rtMostraJogador();
-        });
-
         function rtAbreHall() {
             const corpo = document.getElementById('rt-corpo');
             const nota = document.getElementById('rt-hall-nota');
@@ -1155,7 +1082,7 @@ var RETRO = (function () {
         function rtEnviaPontuacao(pontos) {
             const el = document.getElementById('rt-estado');
             el.textContent = '';
-            if (!RETRO.sessao()) { if (rtSemRanking) el.textContent = 'Sem ranking: pontuação não enviada.'; return; }
+            if (!RETRO.sessao()) { el.textContent = 'Sem ranking: entra no Templo do Retro para registar pontuações.'; return; }
             el.textContent = 'A enviar pontuação…';
             RETRO.enviar('snake', { score: pontos }).then(r => {
                 if (r && r.ok) {
@@ -1167,7 +1094,7 @@ var RETRO = (function () {
                         try { localStorage.setItem('snake_hs_mobile', String(highScore)); } catch (e) {}
                     }
                 } else if (r && r.error === 'invalid_session') {
-                    el.textContent = 'Sessão expirada. Entra de novo para registar pontuações.';
+                    el.textContent = 'Sessão expirada. Entra de novo no Templo do Retro para registar pontuações.';
                     rtMostraJogador();
                 } else if (r && r.error === 'too_fast') {
                     el.textContent = 'Pontuação não registada (partida demasiado rápida).';
@@ -1177,14 +1104,12 @@ var RETRO = (function () {
             }, () => { el.textContent = 'Sem ligação: pontuação não registada no ranking.'; });
         }
 
-        // Arranque: validar sessão guardada ou pedir login
+        // Arranque: valida a sessão do portal, se existir. Nunca pede login aqui.
         rtMostraJogador();
         if (RETRO.sessao()) {
             RETRO.validar().then(r => {
-                if (r && r.ok) { rtAposLogin(); } else { rtMostraJogador(); rtAbreLogin(); }
+                if (r && r.ok) { rtAposLogin(); } else { rtMostraJogador(); }
             }, () => { rtMostraJogador(); }); // sem rede: continua com a sessão guardada
-        } else {
-            rtAbreLogin();
         }
 
         // Button Listeners
